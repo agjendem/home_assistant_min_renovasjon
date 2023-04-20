@@ -127,13 +127,11 @@ class MinRenovasjon:
         return tommekalender, fraksjoner
 
     def _get_calendar_list(self, refresh=False):
-        data = None
-
-        if refresh or data is None:
+        if refresh or len(self._kalender_list) == 0:
             _LOGGER.info("Refresh or no data. Fetching from API.")
             tommekalender, fraksjoner = self._get_from_web_api()
         else:
-            tommekalender, fraksjoner = data
+            tommekalender, fraksjoner = None, None
 
         kalender_list = self._parse_calendar_list(tommekalender, fraksjoner)
 
@@ -151,42 +149,43 @@ class MinRenovasjon:
     def _parse_calendar_list(tommekalender, fraksjoner):
         kalender_list = []
 
-        tommekalender_json = json.loads(tommekalender)
-        fraksjoner_json = json.loads(fraksjoner)
+        if tommekalender is not None and fraksjoner is not None:
+            tommekalender_json = json.loads(tommekalender)
+            fraksjoner_json = json.loads(fraksjoner)
 
-        for calender_entry in tommekalender_json:
-            fraksjon_id = calender_entry["FraksjonId"]
-            tommedato_neste = None
+            for calender_entry in tommekalender_json:
+                fraksjon_id = calender_entry["FraksjonId"]
+                tommedato_neste = None
 
-            if len(calender_entry["Tommedatoer"]) == 1:
-                tommedato_forste = calender_entry["Tommedatoer"][0]
-            else:
-                tommedato_forste, tommedato_neste = calender_entry["Tommedatoer"]
+                if len(calender_entry["Tommedatoer"]) == 1:
+                    tommedato_forste = calender_entry["Tommedatoer"][0]
+                else:
+                    tommedato_forste, tommedato_neste = calender_entry["Tommedatoer"]
 
-            if tommedato_forste is not None:
-                tommedato_forste = datetime.strptime(
-                    tommedato_forste, "%Y-%m-%dT%H:%M:%S"
-                )
-            if tommedato_neste is not None:
-                tommedato_neste = datetime.strptime(
-                    tommedato_neste, "%Y-%m-%dT%H:%M:%S"
-                )
-
-            for fraksjon in fraksjoner_json:
-                if fraksjon["Id"] == fraksjon_id:
-                    fraksjon_navn = fraksjon["Navn"]
-                    fraksjon_ikon = fraksjon["Ikon"]
-
-                    kalender_list.append(
-                        (
-                            fraksjon_id,
-                            fraksjon_navn,
-                            fraksjon_ikon,
-                            tommedato_forste,
-                            tommedato_neste,
-                        )
+                if tommedato_forste is not None:
+                    tommedato_forste = datetime.strptime(
+                        tommedato_forste, "%Y-%m-%dT%H:%M:%S"
                     )
-                    continue
+                if tommedato_neste is not None:
+                    tommedato_neste = datetime.strptime(
+                        tommedato_neste, "%Y-%m-%dT%H:%M:%S"
+                    )
+
+                for fraksjon in fraksjoner_json:
+                    if fraksjon["Id"] == fraksjon_id:
+                        fraksjon_navn = fraksjon["Navn"]
+                        fraksjon_ikon = fraksjon["Ikon"]
+
+                        kalender_list.append(
+                            (
+                                fraksjon_id,
+                                fraksjon_navn,
+                                fraksjon_ikon,
+                                tommedato_forste,
+                                tommedato_neste,
+                            )
+                        )
+                        continue
 
         return kalender_list
 
